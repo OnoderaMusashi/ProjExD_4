@@ -4,6 +4,7 @@ import random
 import sys
 import time
 import pygame as pg
+#from pygame.sprite import AbstractGroup
 
 
 WIDTH = 1100  # ゲームウィンドウの幅
@@ -297,6 +298,28 @@ class EMP(pg.sprite.Sprite):
         pg.display.update()
         time.sleep(0.05)
 
+class Shield(pg.sprite.Sprite):
+    """
+    追加機能5
+    """
+    def __init__(self, bird:Bird, life:int):
+        super().__init__()
+        self.life = life
+        self.image = pg.Surface((20, bird.rect.height * 2))
+        pg.draw.rect(self.image,(0, 0, 255), (0,0,20, bird.rect.height*2))
+        vx, vy = bird.dire
+        self.dire = math.degrees(math.atan2(-vy,vx))
+        self.image =pg.transform.rotate(self.image,self.dire)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx+bird.dire[0]*bird.rect.width
+        self.rect.centery = bird.rect.centery+bird.dire[1]*bird.rect.height
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -309,6 +332,7 @@ def main():
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
     gravity_a = pg.sprite.Group()
+    shields = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -330,7 +354,10 @@ def main():
                 bird.state = "hyper"
                 bird.hyper_life = 500
                 score.value -= 100
-        screen.blit(bg_img, [0, 0])
+            if event.type == pg.KEYDOWN and event.key == pg.K_1 and len(shields) == 0 and score.value > 50:
+                shields.add(Shield(bird,400))
+                score.value -= 50
+        screen.blit(bg_img,[0,0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
@@ -383,6 +410,8 @@ def main():
         exps.draw(screen)
         gravity_a.update()
         gravity_a.draw(screen)
+        shields.update()
+        shields.draw(screen)
         score.update(screen)
         pg.display.update()
         tmr += 1
