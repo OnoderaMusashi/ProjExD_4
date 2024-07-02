@@ -259,10 +259,6 @@ class NeoBeam(pg.sprite.Sprite):
         return [Beam(self.bird, angle) for angle in range(-50, +51, int(100/(self.num-1)))]
 
 
-        
-        
-
-
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
