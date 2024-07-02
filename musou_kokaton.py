@@ -4,7 +4,6 @@ import random
 import sys
 import time
 import pygame as pg
-#from pygame.sprite import AbstractGroup
 
 
 WIDTH = 1100  # ゲームウィンドウの幅
@@ -42,9 +41,6 @@ class Bird(pg.sprite.Sprite):
     """
     ゲームキャラクター（こうかとん）に関するクラス
     """
-
-    
-
     delta = {  # 押下キーと移動量の辞書
         pg.K_UP: (0, -1),
         pg.K_DOWN: (0, +1),
@@ -258,9 +254,13 @@ class Score:
 
 class Gravity(pg.sprite.Sprite):  
     """
-    画面全体を覆う重力場を発生させるクラス
+    追加機能2 重力場
     """
     def __init__(self,life: int):
+        """
+        画面全体を覆う重力場を発生させる
+        引数：発動時間
+        """
         super().__init__()
         self.life = life
         self.image = pg.Surface((WIDTH,HEIGHT))
@@ -269,15 +269,19 @@ class Gravity(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         
     def update(self):
+        """
+        発動時間を1減算して、0未満になったらkillする
+        """
         self.life -= 1
         if self.life < 0:
             self.kill()
+
 
 class EMP(pg.sprite.Sprite):
     """
     追加機能3 電磁パルス
     """
-    def __init__(self, obj_en:"Enemy", obj_bb: "Bomb", screen: pg.Surface):
+    def __init__(self, obj_en: Enemy, obj_bb: Bomb, screen: pg.Surface):
         """
         発動時に存在する敵機と爆弾を無効化する
         引数1 obj_en：Enemyインスタンスのグループ
@@ -300,11 +304,17 @@ class EMP(pg.sprite.Sprite):
         pg.display.update()
         time.sleep(0.05)
 
+
 class Shield(pg.sprite.Sprite):
     """
-    追加機能5
+    追加機能5 防御壁
     """
-    def __init__(self, bird:Bird, life:int):
+    def __init__(self, bird: Bird, life: int):
+        """
+        こうかとんの前に防御壁を出現させ，着弾を防ぐ
+        引数1 bird：birdインスタンス
+        引数2 life：発動時間
+        """
         super().__init__()
         self.life = life
         self.image = pg.Surface((20, bird.rect.height * 2))
@@ -317,6 +327,9 @@ class Shield(pg.sprite.Sprite):
         self.rect.centery = bird.rect.centery+bird.dire[1]*bird.rect.height
 
     def update(self):
+        """
+        発動時間を1減算して、0未満になったらkillする
+        """
         self.life -= 1
         if self.life < 0:
             self.kill()
@@ -324,10 +337,11 @@ class Shield(pg.sprite.Sprite):
 
 class NeoBeam(pg.sprite.Sprite):
     """
-    機能６弾幕
+    機能6 弾幕
     """
-    def __init__(self, bird:Bird, num: int):
+    def __init__(self, bird: Bird, num: int):
         """
+        一度に複数方向へビームを発射する
         引数1 bird:ビームを放つこうかとん
         引数2 num:ビーム数
         """
@@ -359,21 +373,26 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+            # スペースキー+左Shiftキー押下(機能6 弾幕)
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
                 beams.add(NeoBeam(bird, 5).gen_beams())
+            # スペースキー押下(通常ビーム)
             elif event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            # エンターキー押下+スコア200(機能2 重力場)
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value > 200:
                 gravity_a.add(Gravity(400))
                 score.value -= 200
-            # eキー押下 かつ スコアが20より上
+            # eキー押下+スコア20(機能3 電磁パルス)
             if event.type == pg.KEYDOWN and event.key == pg.K_e and score.value > 20:
                 EMP(emys, bombs, screen)  # EMPクラスを呼び出す
                 score.value -= 20  # 20点ダウン
+            # 右Shiftキー押下+スコア100(機能4 無敵状態)
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and score.value > 100:
                 bird.state = "hyper"
                 bird.hyper_life = 500
                 score.value -= 100
+            # 1キー押下+スコア50+一度に1回のみ(機能5 防御壁)
             if event.type == pg.KEYDOWN and event.key == pg.K_1 and len(shields) == 0 and score.value > 50:
                 shields.add(Shield(bird,400))
                 score.value -= 50
@@ -406,6 +425,7 @@ def main():
         
         for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.value += 1  # 1点アップ
         
         for bomb in bombs:
             if bomb.state == 'inactive':  # 爆弾がアクティブでないなら
@@ -440,7 +460,6 @@ def main():
         tmr += 1
         clock.tick(50)
 
-        
 
 if __name__ == "__main__":
     pg.init()
