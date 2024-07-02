@@ -242,6 +242,22 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class Gravity(pg.sprite.Sprite):  
+    """
+    画面全体を覆う重力場を発生させるクラス
+    """
+    def __init__(self,life: int):
+        super().__init__()
+        self.life = life
+        self.image = pg.Surface((WIDTH,HEIGHT))
+        pg.draw.rect(self.image,(0,0,0),(0,0,WIDTH,HEIGHT))
+        self.image.set_alpha(128)
+        self.rect = self.image.get_rect()
+        
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 class EMP(pg.sprite.Sprite):
     """
@@ -281,6 +297,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    gravity_a = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -291,6 +308,9 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value > 0:
+                gravity_a.add(Gravity(400))
+                score.value -= 0
             # eキー押下 かつ スコアが20より上
             if event.type == pg.KEYDOWN and event.key == pg.K_e and score.value > 20:
                 EMP(emys, bombs, screen)  # EMPクラスを呼び出す
@@ -312,7 +332,15 @@ def main():
 
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
-            score.value += 1  # 1点アップ
+            score.value += 100  # 1点アップ
+
+        for bomb in pg.sprite.groupcollide(bombs, gravity_a, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.value += 100  # 1点アップ
+          
+        for emy in pg.sprite.groupcollide(emys, gravity_a, True, False).keys():
+            exps.add(Explosion(emy, 50))  # 爆発エフェクト
+            score.value += 100  # 1点アップ
 
         for bomb in bombs:
             if bomb.state == 'inactive':  # 爆弾がアクティブでないなら
@@ -334,11 +362,14 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        gravity_a.update()
+        gravity_a.draw(screen)
         score.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
 
+        
 
 if __name__ == "__main__":
     pg.init()
